@@ -1,4 +1,4 @@
-import * as THREE from 'three'
+// import * as THREE from 'three'
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75,window.innerWidth/window.innerHeight,.1,1000);
@@ -16,6 +16,9 @@ camera.position.z = 50;
 
 function animate() {
     requestAnimationFrame(animate);
+
+    shape.rotation.x += 0.01;
+	shape.rotation.y += 0.01;
     renderer.render(scene, camera)
 }
 animate()
