@@ -1,0 +1,26 @@
+/* .interact-text {
+    color: white;
+    position:absolute;
+    left: 2em;
+    top: 2em;
+    z-index: 100;
+    background-color: transparent;
+} */
+
+#interact-text {
+    position: absolute;
+	top: 5em;
+	width: 100%;
+	text-align: center;
+	z-index: 100;
+	display:block;
+}
+
+#response-text {
+    position: absolute;
+    bottom: 5em;
+    width: 100%;
+	text-align: center;
+	z-index: 100;
+	display:block;
+}
