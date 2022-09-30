@@ -7,8 +7,21 @@ document.body.appendChild(renderer.domElement)
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight,1,500)
 camera.position.set(0,25,100)
 camera.lookAt(0,25,0);
+const camDirection = new THREE.Vector3();
+const boxMaterial = new THREE.MeshBasicMaterial({color: 'blue'})
+const boxGeometry = new THREE.BoxGeometry(5,5,5)
+
+// making camera box to intersect with walls; will see if this works! might not be best practice
+const cameraBox = new THREE.Mesh(boxGeometry, boxMaterial)
+cameraBox.position.set(0,25,100)
+const cameraBoundingBox = new THREE.Box3().setFromObject(cameraBox)
 
 const scene = new THREE.Scene()
+scene.add(cameraBox)
+
+//console logs
+console.log(camera.position)
+console.log(cameraBox.position)
 
 // test code making a 2D triangle
 const material = new THREE.LineBasicMaterial({color: 'red'})
@@ -26,20 +39,26 @@ triangle.position.set(0,3,0)
 scene.add(triangle)
 
 
-// trying to make a wall or something
+// basic walls
 const materialWall = new THREE.MeshBasicMaterial({color: 'gray'})
-const frontWallGeometry = new THREE.BoxGeometry(300,100,5);
+const frontWallGeometry = new THREE.BoxGeometry(300,100,10);
 const frontWall = new THREE.Mesh(frontWallGeometry, materialWall)
 const backWall = new THREE.Mesh(frontWallGeometry, materialWall)
 frontWall.position.set(0,30,-150)
 backWall.position.set(0,30,150)
 
+const frontWallBound = new THREE.Box3().setFromObject(frontWall)
+const backWallBound = new THREE.Box3().setFromObject(backWall)
+
 const sideWallMaterial = new THREE.MeshBasicMaterial({color: 'brown'})
-const sideWallGeometry = new THREE.BoxGeometry(5,100,300);
+const sideWallGeometry = new THREE.BoxGeometry(10,100,300);
 const leftWall = new THREE.Mesh(sideWallGeometry, sideWallMaterial);
 const rightWall = new THREE.Mesh(sideWallGeometry, sideWallMaterial)
 leftWall.position.set(-150,30,0)
 rightWall.position.set(150,30,0)
+
+const leftWallBound = new THREE.Box3().setFromObject(leftWall)
+const rightWallBound = new THREE.Box3().setFromObject(rightWall)
 
 const floorMaterial = new THREE.MeshBasicMaterial({color: 'green'})
 const floorGeometry = new THREE.BoxGeometry(300,1,300);
@@ -53,6 +72,9 @@ scene.add(leftWall)
 scene.add(rightWall)
 scene.add(floor)
 renderer.render(scene,camera)
+
+//array of objects I want to create collision with so far
+const objects = [frontWallBound,backWallBound,leftWallBound,rightWallBound]
 
 // key down event handlers
 function handleKeyDown(event) {
@@ -111,36 +133,48 @@ function handleKeyUp(event) {
 window.addEventListener('keydown', handleKeyDown, false)
 window.addEventListener('keyup', handleKeyUp, false)
 
-
+const collisionCheck = () => {
+    objects.forEach(bound => {
+        if (cameraBoundingBox.intersectsBox(bound)) {
+            camera.position.add(camDirection.multiplyScalar(-2))
+            cameraBox.position.add(camDirection)
+            cameraBoundingBox.translate(camDirection)
+        }
+    })
+}
 
 function animate() {
     requestAnimationFrame(animate)
     if (window.isADown) {
-        let direction = new THREE.Vector3();
-        camera.getWorldDirection(direction)
-        direction.cross(new THREE.Vector3(0,-1,0))
-        camera.position.add(direction.multiplyScalar(.75))
+        camera.getWorldDirection(camDirection)
+        camDirection.cross(new THREE.Vector3(0,-1,0))
+        camera.position.add(camDirection.multiplyScalar(.75))
+        cameraBox.position.add(camDirection)
+        cameraBoundingBox.translate(camDirection)
         camera.updateProjectionMatrix()
     }
     if (window.isDDown) {
-        let direction = new THREE.Vector3();
-        camera.getWorldDirection(direction)
-        direction.cross(new THREE.Vector3(0,1,0))
-        camera.position.add(direction.multiplyScalar(.75))
+        camera.getWorldDirection(camDirection)
+        camDirection.cross(new THREE.Vector3(0,1,0))
+        camera.position.add(camDirection.multiplyScalar(.75))
+        cameraBox.position.add(camDirection)
+        cameraBoundingBox.translate(camDirection)
         camera.updateProjectionMatrix()
     }
     if (window.isWDown) {
-        let direction = new THREE.Vector3();
-        camera.getWorldDirection(direction)
-        direction.setComponent(1,0)
-        camera.position.add(direction.multiplyScalar(.75))
+        camera.getWorldDirection(camDirection)       
+        camDirection.setComponent(1,0)
+        camera.position.add(camDirection.multiplyScalar(.75))
+        cameraBox.position.add(camDirection)
+        cameraBoundingBox.translate(camDirection)
         camera.updateProjectionMatrix()
     }
     if (window.isSDown) {
-        let direction = new THREE.Vector3();
-        camera.getWorldDirection(direction)
-        direction.setComponent(1,0)
-        camera.position.add(direction.multiplyScalar(-.75))
+        camera.getWorldDirection(camDirection)
+        camDirection.setComponent(1,0)
+        camera.position.add(camDirection.multiplyScalar(-.75))
+        cameraBox.position.add(camDirection)
+        cameraBoundingBox.translate(camDirection)
         camera.updateProjectionMatrix()
     }
     if (window.isQDown) {
@@ -152,29 +186,38 @@ function animate() {
         camera.updateProjectionMatrix()
     }
     if (window.isDownArrowDown) {
-        let direction = new THREE.Vector3()
-        camera.getWorldDirection(direction)
-        console.log(direction)
-        if (direction.y > -.5 ) {
+        camera.getWorldDirection(camDirection)
+        if (camDirection.y > -.9 ) {
             camera.rotateOnAxis(new THREE.Vector3(1,0,0), -0.02)
         }
     }
-
     if (window.isUpArrowDown) {
-        let direction = new THREE.Vector3()
-        camera.getWorldDirection(direction)
-        console.log(direction)
-        if (direction.y < .5) {
+        camera.getWorldDirection(camDirection)
+        if (camDirection.y < .5) {
             camera.rotateOnAxis(new THREE.Vector3(1,0,0), 0.02)
         }
     }
+
+    if (cameraBoundingBox.intersectsBox(frontWallBound)) {
+        console.log('intersecting');
+        camera.position.add(camDirection.multiplyScalar(-2))
+        cameraBox.position.add(camDirection)
+        cameraBoundingBox.translate(camDirection)
+    }
+    collisionCheck();
     // also could look into a jump mechanic? but then would need some sort of physics
 
     renderer.render(scene, camera)
 }
 
 // next steps:
-// - look into adding some sort of collision detection
+// - look into adding other objects as mentioned below, or learn more about textures; could make the walls/floor look better
+// - could also add a ceiling
+// - maybe also try to add a door to one of the walls; could be for below;
+// --- would likely need to reconstruct one of the walls
+// ---- clunky way: rebuild pieces of wall to have a door hole; then, add a door there
+// ---- but before that point, maybe work on first adding a basic door object and being able to go up and interact with it
+// ------ to do that, look into object to camera proximity detection or something; if object within x distance, show message maybe
 
 // after that, maybe look into making or importing other objects; could try to start adding things to the room
 // if objects added to room, could work on figuring out how to interact with them
