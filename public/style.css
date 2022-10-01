@@ -8,6 +8,7 @@
 } */
 
 #interact-text {
+    color: white;
     position: absolute;
 	top: 5em;
 	width: 100%;
@@ -17,6 +18,7 @@
 }
 
 #response-text {
+    color: white;
     position: absolute;
     bottom: 5em;
     width: 100%;
