@@ -12,19 +12,24 @@ let firstDoorUnlocked = false;
 let firstDoorClosed = true;
 let firstDoorInteractionInProgress = false;
 let hasSafeCombo = false;
-let hasBookShelfClue = false; // maybe each render, could reset this bool; composed of 2-3 separate ones?
+let hasWhaleClue = false;
+let hasShipClue = false
+let hasBookShelfClue = false;
 let hasDoorKey = false;
+let safeGuesses = 0;
+const bookTitles = ["Of Mice and Men", "Little Women", "Pride and Prejudice", "The Catcher in the Rye", "Animal Farm", "The Great Gatsby", "Lord of the Flies", "Catch-22", "Don Quixote", "Dracula", "The Count of Monte Cristo", "A Tale of Two Cities", "Invisible Man", "Sense and Sensibility", "Persuasion", "The Hobbit","Treasure Island","A Christmas Carol","The Scarlet Letter","Heart of Darkness","The Road","Things Fall Apart", "Crime and Punishment", "War of the Worlds", "Mansfield Park","To Kill a Mockingbird", "Jane Eyre", "The Call of the Wild","Frankenstein","Nineteen Eighty-Four","The Iliad","East of Eden","The Secret Garden","Atlas Shrugged","War and Peace","Peter Pan","Hard Times"]
+const randomBookResponse = ["You flip through a few pages, but don't find anything useful","The text is too difficult for you, you give up quickly", "*Yawn... This book is boring, you put it back", "You read a few pages before putting it away", "One of your favorites! You smile fondly before putting it back"]
 
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight,1,500)
-camera.position.set(0,25,100)
+camera.position.set(0,25,80)
 camera.lookAt(0,25,0);
 const camDirection = new THREE.Vector3();
 const boxMaterial = new THREE.MeshBasicMaterial({color: 'blue'})
-const boxGeometry = new THREE.BoxGeometry(10,15,10)
+const boxGeometry = new THREE.BoxGeometry(10,20,10)
 
 // making camera box to intersect with walls; will see if this works! might not be best practice
 const cameraBox = new THREE.Mesh(boxGeometry, boxMaterial)
-cameraBox.position.set(0,25,100)
+cameraBox.position.set(0,25,80)
 const cameraBoundingBox = new THREE.Box3().setFromObject(cameraBox)
 
 const scene = new THREE.Scene()
@@ -52,7 +57,7 @@ const frontWallRightBound = new THREE.Box3().setFromObject(frontWallRight);
 
 //first door
 const firstDoorGeometry = new THREE.BoxGeometry(30,60,4)
-const doorMaterial = new THREE.MeshBasicMaterial({color: 'brown'})
+const doorMaterial = new THREE.MeshBasicMaterial({color: 'sienna'})
 const firstDoor = new THREE.Mesh(firstDoorGeometry, doorMaterial);
 firstDoor.position.set(0,20,-150);
 firstDoor.geometry.computeBoundingBox();
@@ -76,29 +81,459 @@ rightWall.position.set(150,30,0)
 const leftWallBound = new THREE.Box3().setFromObject(leftWall)
 const rightWallBound = new THREE.Box3().setFromObject(rightWall)
 
-const floorMaterial = new THREE.MeshBasicMaterial({color: 'green'})
+const floorMaterial = new THREE.MeshBasicMaterial({color: 'burlywood'})
 const floorGeometry = new THREE.BoxGeometry(300,1,1000);
 const floor = new THREE.Mesh(floorGeometry, floorMaterial);
 floor.position.set(0,-5,0)
 
 // bookshelf geometries
 const shelfMaterial = new THREE.MeshBasicMaterial({color: 'saddlebrown'})
+const shelfBackMaterial = new THREE.MeshBasicMaterial({color: 'maroon'})
 const verticalShelfGeometry = new THREE.BoxGeometry(10, 70, 4)
 const leftVertShelf = new THREE.Mesh(verticalShelfGeometry,shelfMaterial)
 const midVertShelf = new THREE.Mesh(verticalShelfGeometry,shelfMaterial)
 const rightVertShelf = new THREE.Mesh(verticalShelfGeometry,shelfMaterial)
-const horizontalShelfGeometry = new THREE.BoxGeometry(10,4,64)
+const horizontalShelfGeometry = new THREE.BoxGeometry(10,2,64)
 const topShelf = new THREE.Mesh(horizontalShelfGeometry, shelfMaterial)
+const middleShelf = new THREE.Mesh(horizontalShelfGeometry, shelfMaterial)
+const middleShelfTwo = new THREE.Mesh(horizontalShelfGeometry, shelfMaterial)
+const middleShelfThree = new THREE.Mesh(horizontalShelfGeometry, shelfMaterial)
+const bottomShelf = new THREE.Mesh(horizontalShelfGeometry, shelfMaterial)
+const shelfBackGeometry = new THREE.BoxGeometry(.5, 70, 60)
+const shelfBackWall = new THREE.Mesh(shelfBackGeometry, shelfBackMaterial)
 leftVertShelf.position.set(-140, 25, 30)
 midVertShelf.position.set(-140, 25, 0)
 rightVertShelf.position.set(-140, 25, -30)
 topShelf.position.set(-140,60,0)
+middleShelf.position.set(-140,44,0)
+middleShelfTwo.position.set(-140,28,0)
+middleShelfThree.position.set(-140,12,0)
+bottomShelf.position.set(-140,-4,0)
+shelfBackWall.position.set(-145,25,0)
 
-//might be a good time to figure out how to group multiple meshes together; otherwise, bounding box pieces will become unwieldy
+
+//grouping together
+const shelfGroup = new THREE.Group().add(leftVertShelf, midVertShelf, rightVertShelf)
+const shelfBound = new THREE.Box3().setFromObject(shelfGroup)
 scene.add(leftVertShelf)
 scene.add(midVertShelf)
 scene.add(rightVertShelf)
 scene.add(topShelf)
+scene.add(middleShelf)
+scene.add(middleShelfTwo)
+scene.add(middleShelfThree)
+scene.add(bottomShelf)
+scene.add(shelfBackWall)
+
+//books; very inefficient, brute force method or adding/creating. will try to learn better method after room finished
+const bookGeometryOne = new THREE.BoxGeometry(5,10,2)
+const bookMaterialOne = new THREE.MeshBasicMaterial({color: 'green'})
+const bookGeometryTwo = new THREE.BoxGeometry(6,12,2)
+const bookMaterialTwo = new THREE.MeshBasicMaterial({color: 'blue'})
+const bookGeometryThree = new THREE.BoxGeometry(7,11,2)
+const bookMaterialThree = new THREE.MeshBasicMaterial({color: 'crimson'})
+const bookGeometryFour = new THREE.BoxGeometry(4,12,3)
+const bookMaterialFour = new THREE.MeshBasicMaterial({color: 'darkviolet'})
+
+const dummyFunctionAddBooks = () => {
+//all shelves copy/pasted below. disgusting, should have written a function or read up more on groups, but concerned about time
+const greenBookOne = new THREE.Mesh(bookGeometryOne,bookMaterialOne)
+const greenBookOneCloneOne = greenBookOne.clone()
+const greenBookOneCloneTwo = greenBookOne.clone()
+const greenBookOneCloneThree = greenBookOne.clone()
+const blueBookOne = new THREE.Mesh(bookGeometryTwo, bookMaterialTwo)
+const blueBookCloneOne = blueBookOne.clone()
+const blueBookCloneTwo = blueBookOne.clone()
+const redBookOne = new THREE.Mesh(bookGeometryThree, bookMaterialThree)
+const redBookCloneOne = redBookOne.clone()
+const redBookCloneTwo = redBookOne.clone()
+const yellowBookOne = new THREE.Mesh(bookGeometryFour, bookMaterialFour)
+const yellowBookClone = yellowBookOne.clone()
+
+greenBookOne.position.set(-140,33.5,3)
+greenBookOneCloneOne.position.set(-140,33.5,11)
+greenBookOneCloneTwo.position.set(-140,33.5,24)
+greenBookOneCloneThree.position.set(-140,33.5,18)
+blueBookOne.position.set(-140,33.5,20)
+blueBookCloneOne.position.set(-140,33.5,5)
+blueBookCloneTwo.position.set(-140,33.5,9)
+redBookOne.position.set(-140,33.5,7)
+redBookCloneOne.position.set(-140,33.5,13)
+redBookCloneTwo.position.set(-140,33.5,22)
+yellowBookOne.position.set(-140,33.5,26.5)
+yellowBookClone.position.set(-140,33.5,15.5)
+
+scene.add(greenBookOne)
+scene.add(greenBookOneCloneOne)
+scene.add(greenBookOneCloneTwo)
+scene.add(greenBookOneCloneThree)
+scene.add(blueBookOne)
+scene.add(blueBookCloneOne)
+scene.add(blueBookCloneTwo)
+scene.add(redBookOne)
+scene.add(redBookCloneOne)
+scene.add(redBookCloneTwo)
+scene.add(yellowBookClone)
+scene.add(yellowBookOne)
+
+const greenBookOne1 = new THREE.Mesh(bookGeometryOne,bookMaterialOne)
+const greenBookOneCloneOne1 = greenBookOne.clone()
+const greenBookOneCloneTwo1 = greenBookOne.clone()
+const greenBookOneCloneThree1 = greenBookOne.clone()
+const blueBookOne1 = new THREE.Mesh(bookGeometryTwo, bookMaterialTwo)
+const blueBookCloneOne1 = blueBookOne.clone()
+const blueBookCloneTwo1 = blueBookOne.clone()
+const redBookOne1 = new THREE.Mesh(bookGeometryThree, bookMaterialThree)
+const redBookCloneOne1 = redBookOne.clone()
+const redBookCloneTwo1 = redBookOne.clone()
+const yellowBookOne1 = new THREE.Mesh(bookGeometryFour, bookMaterialFour)
+const yellowBookClone1 = yellowBookOne.clone()
+greenBookOne1.position.set(-140,17.5,-3)
+greenBookOneCloneOne1.position.set(-140,17.5,-11)
+greenBookOneCloneTwo1.position.set(-140,17.5,-24)
+greenBookOneCloneThree1.position.set(-140,17.5,-18)
+blueBookOne1.position.set(-140,17.5,-20)
+blueBookCloneOne1.position.set(-140,17.5,-5)
+blueBookCloneTwo1.position.set(-140,17.5,-9)
+redBookOne1.position.set(-140,17.5,-7)
+redBookCloneOne1.position.set(-140,17.5,-13)
+redBookCloneTwo1.position.set(-140,17.5,-22)
+yellowBookOne1.position.set(-140,17.5,-26.5)
+yellowBookClone1.position.set(-140,17.5,-15.5)
+scene.add(greenBookOne1)
+scene.add(greenBookOneCloneOne1)
+scene.add(greenBookOneCloneTwo1)
+scene.add(greenBookOneCloneThree1)
+scene.add(blueBookOne1)
+scene.add(blueBookCloneOne1)
+scene.add(blueBookCloneTwo1)
+scene.add(redBookOne1)
+scene.add(redBookCloneOne1)
+scene.add(redBookCloneTwo1)
+scene.add(yellowBookClone1)
+scene.add(yellowBookOne1)
+
+const greenBookOne2 = new THREE.Mesh(bookGeometryOne,bookMaterialOne)
+const greenBookOneCloneOne2 = greenBookOne.clone()
+const greenBookOneCloneTwo2 = greenBookOne.clone()
+const greenBookOneCloneThree2 = greenBookOne.clone()
+const blueBookOne2 = new THREE.Mesh(bookGeometryTwo, bookMaterialTwo)
+const blueBookCloneOne2 = blueBookOne.clone()
+const blueBookCloneTwo2 = blueBookOne.clone()
+const redBookOne2 = new THREE.Mesh(bookGeometryThree, bookMaterialThree)
+const redBookCloneOne2 = redBookOne.clone()
+const redBookCloneTwo2 = redBookOne.clone()
+const yellowBookOne2 = new THREE.Mesh(bookGeometryFour, bookMaterialFour)
+const yellowBookClone2 = yellowBookOne.clone()
+greenBookOne2.position.set(-140,1.5,3)
+greenBookOneCloneOne2.position.set(-140,1.5,11)
+greenBookOneCloneTwo2.position.set(-140,1.5,24)
+greenBookOneCloneThree2.position.set(-140,1.5,18)
+blueBookOne2.position.set(-140,1.5,20)
+blueBookCloneOne2.position.set(-140,1.5,5)
+blueBookCloneTwo2.position.set(-140,1.5,9)
+redBookOne2.position.set(-140,1.5,7)
+redBookCloneOne2.position.set(-140,1.5,13)
+redBookCloneTwo2.position.set(-140,1.5,22)
+yellowBookOne2.position.set(-140,1.5,26.5)
+yellowBookClone2.position.set(-140,1.5,15.5)
+scene.add(greenBookOne2)
+scene.add(greenBookOneCloneOne2)
+scene.add(greenBookOneCloneTwo2)
+scene.add(greenBookOneCloneThree2)
+scene.add(blueBookOne2)
+scene.add(blueBookCloneOne2)
+scene.add(blueBookCloneTwo2)
+scene.add(redBookOne2)
+scene.add(redBookCloneOne2)
+scene.add(redBookCloneTwo2)
+scene.add(yellowBookClone2)
+scene.add(yellowBookOne2)
+
+const greenBookOne3 = new THREE.Mesh(bookGeometryOne,bookMaterialOne)
+const greenBookOneCloneOne3 = greenBookOne.clone()
+const greenBookOneCloneTwo3 = greenBookOne.clone()
+const greenBookOneCloneThree3 = greenBookOne.clone()
+const blueBookOne3 = new THREE.Mesh(bookGeometryTwo, bookMaterialTwo)
+const blueBookCloneOne3 = blueBookOne.clone()
+const blueBookCloneTwo3 = blueBookOne.clone()
+const redBookOne3 = new THREE.Mesh(bookGeometryThree, bookMaterialThree)
+const redBookCloneOne3 = redBookOne.clone()
+const redBookCloneTwo3 = redBookOne.clone()
+const yellowBookOne3 = new THREE.Mesh(bookGeometryFour, bookMaterialFour)
+const yellowBookClone3 = yellowBookOne.clone()
+greenBookOne3.position.set(-140,49.5,-3)
+greenBookOneCloneOne3.position.set(-140,49.5,-11)
+greenBookOneCloneTwo3.position.set(-140,49.5,-24)
+greenBookOneCloneThree3.position.set(-140,49.5,-18)
+blueBookOne3.position.set(-140,49.5,-20)
+blueBookCloneOne3.position.set(-140,49.5,-5)
+blueBookCloneTwo3.position.set(-140,49.5,-9)
+redBookOne3.position.set(-140,49.5,-7)
+redBookCloneOne3.position.set(-140,49.5,-13)
+redBookCloneTwo3.position.set(-140,49.5,-22)
+yellowBookOne3.position.set(-140,49.5,-26.5)
+yellowBookClone3.position.set(-140,49.5,-15.5)
+scene.add(greenBookOne3)
+scene.add(greenBookOneCloneOne3)
+scene.add(greenBookOneCloneTwo3)
+scene.add(greenBookOneCloneThree3)
+scene.add(blueBookOne3)
+scene.add(blueBookCloneOne3)
+scene.add(blueBookCloneTwo3)
+scene.add(redBookOne3)
+scene.add(redBookCloneOne3)
+scene.add(redBookCloneTwo3)
+scene.add(yellowBookClone3)
+scene.add(yellowBookOne3)
+
+const greenBookOne4 = new THREE.Mesh(bookGeometryOne,bookMaterialOne)
+const greenBookOneCloneOne4 = greenBookOne.clone()
+const greenBookOneCloneTwo4 = greenBookOne.clone()
+const greenBookOneCloneThree4 = greenBookOne.clone()
+const blueBookOne4 = new THREE.Mesh(bookGeometryTwo, bookMaterialTwo)
+const blueBookCloneOne4 = blueBookOne.clone()
+const blueBookCloneTwo4 = blueBookOne.clone()
+const redBookOne4 = new THREE.Mesh(bookGeometryThree, bookMaterialThree)
+const redBookCloneOne4 = redBookOne.clone()
+const redBookCloneTwo4 = redBookOne.clone()
+const yellowBookOne4 = new THREE.Mesh(bookGeometryFour, bookMaterialFour)
+const yellowBookClone4 = yellowBookOne.clone() //
+greenBookOne4.position.set(-140,1.5,-5)
+greenBookOneCloneOne4.position.set(-140,1.5,-12)
+greenBookOneCloneTwo4.position.set(-140,1.5,-27)
+greenBookOneCloneThree4.position.set(-140,1.5,-18)
+blueBookOne4.position.set(-140,1.5,-20)
+blueBookCloneOne4.position.set(-140,1.5,-3)
+blueBookCloneTwo4.position.set(-140,1.5,-14)
+redBookOne4.position.set(-140,1.5,-7)
+redBookCloneOne4.position.set(-140,1.5,-16)
+redBookCloneTwo4.position.set(-140,1.5,-25)
+yellowBookOne4.position.set(-140,1.5,-22.5)
+yellowBookClone4.position.set(-140,1.5,-9.5)
+scene.add(greenBookOne4)
+scene.add(greenBookOneCloneOne4)
+scene.add(greenBookOneCloneTwo4)
+scene.add(greenBookOneCloneThree4)
+scene.add(blueBookOne4)
+scene.add(blueBookCloneOne4)
+scene.add(blueBookCloneTwo4)
+scene.add(redBookOne4)
+scene.add(redBookCloneOne4)
+scene.add(redBookCloneTwo4)
+scene.add(yellowBookClone4)
+scene.add(yellowBookOne4)
+
+const greenBookOne5 = new THREE.Mesh(bookGeometryOne,bookMaterialOne)
+const greenBookOneCloneOne5 = greenBookOne.clone()
+const greenBookOneCloneTwo5 = greenBookOne.clone()
+const greenBookOneCloneThree5 = greenBookOne.clone()
+const blueBookOne5 = new THREE.Mesh(bookGeometryTwo, bookMaterialTwo)
+const blueBookCloneOne5 = blueBookOne.clone()
+const blueBookCloneTwo5 = blueBookOne.clone()
+const redBookOne5 = new THREE.Mesh(bookGeometryThree, bookMaterialThree)
+const redBookCloneOne5 = redBookOne.clone()
+const redBookCloneTwo5 = redBookOne.clone()
+const yellowBookOne5 = new THREE.Mesh(bookGeometryFour, bookMaterialFour)
+const yellowBookClone5 = yellowBookOne.clone() //
+greenBookOne5.position.set(-140,33.5,-5)
+greenBookOneCloneOne5.position.set(-140,33.5,-12)
+greenBookOneCloneTwo5.position.set(-140,33.5,-27)
+greenBookOneCloneThree5.position.set(-140,33.5,-18)
+blueBookOne5.position.set(-140,33.5,-20)
+blueBookCloneOne5.position.set(-140,33.5,-3)
+blueBookCloneTwo5.position.set(-140,33.5,-14)
+redBookOne5.position.set(-140,33.5,-7)
+redBookCloneOne5.position.set(-140,33.5,-16)
+redBookCloneTwo5.position.set(-140,33.5,-25)
+yellowBookOne5.position.set(-140,33.5,-22.5)
+yellowBookClone5.position.set(-140,33.5,-9.5)
+scene.add(greenBookOne5)
+scene.add(greenBookOneCloneOne5)
+scene.add(greenBookOneCloneTwo5)
+scene.add(greenBookOneCloneThree5)
+scene.add(blueBookOne5)
+scene.add(blueBookCloneOne5)
+scene.add(blueBookCloneTwo5)
+scene.add(redBookOne5)
+scene.add(redBookCloneOne5)
+scene.add(redBookCloneTwo5)
+scene.add(yellowBookClone5)
+scene.add(yellowBookOne5)
+
+const greenBookOne6 = new THREE.Mesh(bookGeometryOne,bookMaterialOne)
+const greenBookOneCloneOne6 = greenBookOne.clone()
+const greenBookOneCloneTwo6 = greenBookOne.clone()
+const greenBookOneCloneThree6 = greenBookOne.clone()
+const blueBookOne6 = new THREE.Mesh(bookGeometryTwo, bookMaterialTwo)
+const blueBookCloneOne6 = blueBookOne.clone()
+const blueBookCloneTwo6 = blueBookOne.clone()
+const redBookOne6 = new THREE.Mesh(bookGeometryThree, bookMaterialThree)
+const redBookCloneOne6 = redBookOne.clone()
+const redBookCloneTwo6 = redBookOne.clone()
+const yellowBookOne6 = new THREE.Mesh(bookGeometryFour, bookMaterialFour)
+const yellowBookClone6 = yellowBookOne.clone() //
+greenBookOne6.position.set(-140,17.5,5)
+greenBookOneCloneOne6.position.set(-140,17.5,12)
+greenBookOneCloneTwo6.position.set(-140,17.5,27)
+greenBookOneCloneThree6.position.set(-140,17.5,18)
+blueBookOne6.position.set(-140,17.5,20)
+blueBookCloneOne6.position.set(-140,17.5,3)
+blueBookCloneTwo6.position.set(-140,17.5,14)
+redBookOne6.position.set(-140,17.5,7)
+redBookCloneOne6.position.set(-140,17.5,16)
+redBookCloneTwo6.position.set(-140,17.5,25)
+yellowBookOne6.position.set(-140,17.5,22.5)
+yellowBookClone6.position.set(-140,17.5,9.5)
+scene.add(greenBookOne6)
+scene.add(greenBookOneCloneOne6)
+scene.add(greenBookOneCloneTwo6)
+scene.add(greenBookOneCloneThree6)
+scene.add(blueBookOne6)
+scene.add(blueBookCloneOne6)
+scene.add(blueBookCloneTwo6)
+scene.add(redBookOne6)
+scene.add(redBookCloneOne6)
+scene.add(redBookCloneTwo6)
+scene.add(yellowBookClone6)
+scene.add(yellowBookOne6)
+
+const greenBookOne7 = new THREE.Mesh(bookGeometryOne,bookMaterialOne)
+const greenBookOneCloneOne7 = greenBookOne.clone()
+const greenBookOneCloneTwo7 = greenBookOne.clone()
+const greenBookOneCloneThree7 = greenBookOne.clone()
+const blueBookOne7 = new THREE.Mesh(bookGeometryTwo, bookMaterialTwo)
+const blueBookCloneOne7 = blueBookOne.clone()
+const blueBookCloneTwo7 = blueBookOne.clone()
+const redBookOne7 = new THREE.Mesh(bookGeometryThree, bookMaterialThree)
+const redBookCloneOne7 = redBookOne.clone()
+const redBookCloneTwo7 = redBookOne.clone()
+const yellowBookOne7 = new THREE.Mesh(bookGeometryFour, bookMaterialFour)
+const yellowBookClone7 = yellowBookOne.clone() //
+greenBookOne7.position.set(-140,49.5,5)
+greenBookOneCloneOne7.position.set(-140,49.5,12)
+greenBookOneCloneTwo7.position.set(-140,49.5,27)
+greenBookOneCloneThree7.position.set(-140,49.5,18)
+blueBookOne7.position.set(-140,49.5,20)
+blueBookCloneOne7.position.set(-140,49.5,3)
+blueBookCloneTwo7.position.set(-140,49.5,14)
+redBookOne7.position.set(-140,49.5,7)
+redBookCloneOne7.position.set(-140,49.5,16)
+redBookCloneTwo7.position.set(-140,49.5,25)
+yellowBookOne7.position.set(-140,49.5,22.5)
+yellowBookClone7.position.set(-140,49.5,9.5)
+scene.add(greenBookOne7)
+scene.add(greenBookOneCloneOne7)
+scene.add(greenBookOneCloneTwo7)
+scene.add(greenBookOneCloneThree7)
+scene.add(blueBookOne7)
+scene.add(blueBookCloneOne7)
+scene.add(blueBookCloneTwo7)
+scene.add(redBookOne7)
+scene.add(redBookCloneOne7)
+scene.add(redBookCloneTwo7)
+scene.add(yellowBookClone7)
+scene.add(yellowBookOne7)
+//endregion
+}
+dummyFunctionAddBooks()
+
+//posters or paintings here 
+const paintingGeometry = new THREE.BoxGeometry(2,30,20)
+const paintingMaterial = new THREE.MeshBasicMaterial({color: 'tan'})
+const paintingOne = new THREE.Mesh(paintingGeometry,paintingMaterial)
+const paintingTwo = paintingOne.clone()
+const paintingThree = paintingOne.clone()
+const paintingFour = paintingOne.clone()
+
+paintingOne.position.set(140,35,30)
+paintingTwo.position.set(140,35,-85)
+paintingThree.position.set(140,35,-30)
+paintingFour.position.set(140, 35, 85)
+
+// if time, could try to add some basic shapes on the canvases; like circle, triangle, etc.
+
+const paintingOneBound = new THREE.Box3().setFromObject(paintingOne)
+const paintingTwoBound = new THREE.Box3().setFromObject(paintingTwo)
+const paintingThreeBound = new THREE.Box3().setFromObject(paintingThree)
+const paintingFourBound = new THREE.Box3().setFromObject(paintingFour)
+
+scene.add(paintingOne)
+scene.add(paintingTwo)
+scene.add(paintingThree)
+scene.add(paintingFour)
+
+const safeGeometry = new THREE.BoxGeometry(14,14,10)
+const safeMaterial = new THREE.MeshBasicMaterial({color: 'darkslategray'})
+const safe = new THREE.Mesh(safeGeometry, safeMaterial)
+const safeDialGeometry = new THREE.CylinderGeometry(1,1,3,8)
+const safeDialMaterial = new THREE.MeshBasicMaterial({color: 'gray'})
+const safeDial = new THREE.Mesh(safeDialGeometry, safeDialMaterial)
+safe.rotateY(Math.PI/4)
+safe.position.set(-136,3,-136)
+safeDial.rotateX(Math.PI/2)
+safeDial.rotateZ(3*Math.PI/4)
+safeDial.position.set(-130,3,-135)
+const safeBound = new THREE.Box3().setFromObject(safe)
+scene.add(safe)
+scene.add(safeDial)
+// could make a basic armchair, a desk, a tv, and a lamp as fake objects
+
+//desk; doesn't do anything
+const deskGeometry = new THREE.BoxGeometry(40,4,15)
+const deskMaterial = new THREE.MeshBasicMaterial({color: 'chocolate'})
+const desk = new THREE.Mesh(deskGeometry, deskMaterial);
+desk.position.set(50,15,135)
+const deskBound = new THREE.Box3().setFromObject(desk)
+const deskLegGeometry = new THREE.BoxGeometry(1,20,1)
+const deskLegOne = new THREE.Mesh(deskLegGeometry, deskMaterial);
+const deskLegTwo = deskLegOne.clone()
+const deskLegThree = deskLegOne.clone()
+const deskLegFour = deskLegOne.clone()
+deskLegOne.position.set(30,5,129)
+deskLegTwo.position.set(69,5,141)
+deskLegThree.position.set(69,5,129)
+deskLegFour.position.set(30,5,141)
+
+scene.add(desk)
+scene.add(deskLegOne,deskLegTwo,deskLegThree,deskLegFour)
+//armchair; doesn't do anything yet, could try to make user sit in it
+const chairSeatGeometry = new THREE.BoxGeometry(20,5,20)
+const chairBackGeometry = new THREE.BoxGeometry(20,20,3)
+const chairSeatMaterial = new THREE.MeshBasicMaterial({color: 'mediumpurple'})
+const chairArmGeometry = new THREE.CylinderGeometry(3,3,20,8)
+const chairArmMaterial = new THREE.MeshBasicMaterial({color: 'mediumorchid'})
+const chairSeat = new THREE.Mesh(chairSeatGeometry,chairSeatMaterial)
+const chairBack = new THREE.Mesh(chairBackGeometry, chairSeatMaterial)
+chairSeat.rotateY(Math.PI/4)
+chairSeat.position.set(-130,3,130)
+chairBack.rotateY(3*Math.PI/4)
+chairBack.position.set(-137,10.5,137)
+const chairArm = new THREE.Mesh(chairArmGeometry, chairArmMaterial)
+chairArm.rotateX(Math.PI/2)
+chairArm.rotateZ(Math.PI/4)
+const chairArmClone = chairArm.clone()
+chairArm.position.set(-137.5,8,125)
+chairArmClone.position.set(-125,8,137.5)
+
+const chairLegMaterial = new THREE.MeshBasicMaterial({color: 'saddlebrown'})
+const chairLegGeometry = new THREE.BoxGeometry(1,7.5,1)
+const chairLegOne = new THREE.Mesh(chairLegGeometry, chairLegMaterial)
+chairLegOne.rotateY(Math.PI/4)
+chairLegOne.position.set(-130,-2.5,117.5)
+const chairLegTwo = chairLegOne.clone()
+chairLegTwo.position.set(-117.5,-2.5,130)
+const chairLegThree = chairLegOne.clone()
+const chairLegFour = chairLegOne.clone()
+chairLegThree.position.set(-130,-2.5,142.5)
+chairLegFour.position.set(-142.5,-2.5,130)
+
+const chairGroup = new THREE.Group().add(chairSeat, chairBack, chairArm, chairArmClone)
+const chairBound = new THREE.Box3().setFromObject(chairGroup)
+
+
+scene.add(chairSeat, chairBack, chairArm, chairArmClone, chairLegOne, chairLegTwo, chairLegThree,chairLegFour)
+
 
 
 scene.add(firstDoor)
@@ -113,8 +548,8 @@ scene.add(floor)
 renderer.render(scene,camera)
 
 //array of objects I want to create collision with so far
-const boundaryObjects = [backWallBound,leftWallBound,rightWallBound, frontWallLeftBound, frontWallRightBound, firstDoorBound]
-const interactiveObjects = [firstDoorBound]
+const boundaryObjects = [backWallBound,leftWallBound,rightWallBound, frontWallLeftBound, frontWallRightBound, firstDoorBound, shelfBound, paintingOneBound, paintingTwoBound, paintingThreeBound, paintingFourBound, safeBound, deskBound, chairBound]
+const interactiveObjects = [firstDoorBound, shelfBound, paintingOneBound, paintingTwoBound, paintingThreeBound, paintingFourBound, safeBound, deskBound, chairBound]
 
 // key down event handlers
 function handleKeyDown(event) {
@@ -145,6 +580,9 @@ function handleKeyDown(event) {
     if (event.key === 'i') {
         window.isIDown = true;
     }
+    if (event.key === 'g') {
+        window.isGDown = true;
+    }
 }
 function handleKeyUp(event) {
     if (event.key === 'a') {
@@ -174,6 +612,9 @@ function handleKeyUp(event) {
     if (event.key === 'i') {
         window.isIDown = false;
     }
+    if (event.key === 'g') {
+        window.isGDown = false;
+    }
 }
 
 window.addEventListener('keydown', handleKeyDown, false)
@@ -192,7 +633,7 @@ const collisionCheck = (moveVector) => {
 const proximityCheck = () => {
     let count = 0;
     interactiveObjects.forEach(object => {
-        if (object.distanceToPoint(camera.position) < 50) {
+        if (object.distanceToPoint(camera.position) < 45) {
             document.getElementById('interact-text').innerHTML = "Press 'i' to interact"
             count++;
             interact.innerHTML = "Press 'i' to interact"
@@ -211,10 +652,8 @@ const closestInteractiveObject = () => {
 }
 
 const openCloseFirstDoor = () => {
-    console.log('inside open close function')
     firstDoorInteractionInProgress = true
     if (firstDoorClosed) {
-        console.log('opening door')
         let translation = new THREE.Vector3(-1,0,-1).normalize()
         firstDoor.rotateY(Math.PI/2);
         // guess and check work on translation distance; could have calculated more precisely
@@ -226,7 +665,6 @@ const openCloseFirstDoor = () => {
         setTimeout(() => document.getElementById('response-text').innerHTML="",2000)
     }
     else {
-        console.log('closing door')
         let translation = new THREE.Vector3(1,0,-1).normalize()
         firstDoor.rotateY(Math.PI/2);
         firstDoor.translateOnAxis(translation,18)
@@ -242,22 +680,182 @@ const openCloseFirstDoor = () => {
     setTimeout(() => firstDoorInteractionInProgress = false, 2000)
 }
 
+const guess = () => {
+    let checkInteract = document.getElementById('interact-text').innerHTML;
+    if (checkInteract.length) {
+        let closestObj = closestInteractiveObject();
+        if (closestObj === safeBound) {
+            if (safeGuesses < 4) {
+                if (!document.getElementById('response-text').innerHTML.length) {
+                    let numOne = Math.floor(Math.random()*50);
+                    let numTwo = Math.floor(Math.random()*50);
+                    let numThree = Math.floor(Math.random()*50)
+                    document.getElementById('response-text').innerHTML = `Guessing combination ${numOne}-${numTwo}-${numThree}...`
+                    setTimeout(() => {
+                        if ((numOne === 9) && (numTwo === 17) && (numThree === 32)) {
+                            document.getElementById('response-text').innerHTML="That actually worked! You grab a key from inside the safe"
+                        }
+                        else {
+                            document.getElementById('response-text').innerHTML="Darn! That didn't open it..."
+                        }
+                        setTimeout(() => document.getElementById('response-text').innerHTML="",2000)
+                    },2000)
+                    safeGuesses++;
+                }
+            }
+            else {
+                if (!document.getElementById('response-text').innerHTML.length) {
+                    document.getElementById('response-text').innerHTML = "I'd better be sure about my next guess..."
+                    setTimeout(() => document.getElementById('response-text').innerHTML="",2000)
+                }
+            }
+        }
+        else if (closestObj === shelfBound) {
+            let chance = Math.floor(Math.random()*100)
+            if (chance > 98) {
+                if (!document.getElementById('response-text').innerHTML.length) {
+                    document.getElementById('response-text').innerHTML = `You pick out "Moby Dick"`
+                    setTimeout(() => {  
+                        document.getElementById('response-text').innerHTML="A piece of paper falls out when you pull out the book... It has '9-17-32' scrawled on it..."
+                        setTimeout(() => {
+                            document.getElementById('response-text').innerHTML="Hmm... is that a date...? or maybe a code...?"
+                            setTimeout(() => document.getElementById('response-text').innerHTML= "",3000)
+                        },5000)
+                    },2000)
+                }
+                hasSafeCombo = true
+            } 
+            else {
+                let titleIndex = Math.floor(Math.random()*bookTitles.length)
+                if (!document.getElementById('response-text').innerHTML.length) {
+                    document.getElementById('response-text').innerHTML = `You pick out "${bookTitles[titleIndex]}"`
+                    setTimeout(() => {  
+                        let responseIndex = Math.floor(Math.random()*randomBookResponse.length)
+                        document.getElementById('response-text').innerHTML= randomBookResponse[responseIndex]
+                        setTimeout(() => document.getElementById('response-text').innerHTML= "",3000)
+                    },2000)
+                }
+            }
+        }
+    }
+}
+
 const interact = () => {
     let checkInteract = document.getElementById('interact-text').innerHTML;
     if (checkInteract.length) {
         let closestObj = closestInteractiveObject();
         if (closestObj === firstDoorBound) {
-            console.log('interacting with the door! next have a check, if fails say door is locked')
             if (firstDoorUnlocked) {
                 if (!firstDoorInteractionInProgress) {
                     openCloseFirstDoor()
                 }
-            } else {
+            } else if (hasDoorKey) {
+                if (!document.getElementById('response-text').innerHTML.length) {
+                    document.getElementById('response-text').innerHTML = "Door unlocked"
+                    // probably not the best way to do this; could just clear out when far enough away?
+                    setTimeout(() => {
+                        firstDoorUnlocked = true;
+                        document.getElementById('response-text').innerHTML=""
+                    },1000)
+                }
+            } 
+            else {
                 if (!document.getElementById('response-text').innerHTML.length) {
                     document.getElementById('response-text').innerHTML = "Door is locked"
-                    // probably not the best way to do this; could just clear out when far enough away?
+                    setTimeout(() => document.getElementById('response-text').innerHTML="",2000)
+                }
+            }
+        }
+        else if (closestObj === shelfBound) {
+            if (hasBookShelfClue) {
+                if (!hasSafeCombo){
+                    if (!document.getElementById('response-text').innerHTML.length) {
+                        document.getElementById('response-text').innerHTML = "You scan the titles for Moby Dick..."
+                        setTimeout(() => {  
+                            document.getElementById('response-text').innerHTML="A piece of paper falls out when you pull out the book... It has '9-17-32' scrawled on it..."
+                            setTimeout(() => {
+                                document.getElementById('response-text').innerHTML="Hmm... is that a date...? or maybe a code...?"
+                                setTimeout(() => document.getElementById('response-text').innerHTML= "",3000)
+                            },5000)
+                        },3000)
+                    }
+                    hasSafeCombo = true
+                }
+                if (!document.getElementById('response-text').innerHTML.length) {
+                    document.getElementById('response-text').innerHTML = "There are dozens of classics. Press 'g' to open random book"
+                    setTimeout(() => document.getElementById('response-text').innerHTML="",2000)
+                }
+            } else {
+                if (!document.getElementById('response-text').innerHTML.length) {
+                    document.getElementById('response-text').innerHTML = "There are dozens of classics. Press 'g' to open random book"
+                    setTimeout(() => document.getElementById('response-text').innerHTML="",2000)
+                }
+            }
+        }
+        else if (closestObj === paintingOneBound) {
+            if (!document.getElementById('response-text').innerHTML.length) {
+                document.getElementById('response-text').innerHTML = "Looks like a replica of the Starry Night"
+                setTimeout(() => document.getElementById('response-text').innerHTML="",2000)
+            }
+        }
+        else if (closestObj === paintingTwoBound) {
+            if (!document.getElementById('response-text').innerHTML.length) {
+                document.getElementById('response-text').innerHTML = "Looks like a picture of the Virgin Mary"
+                setTimeout(() => document.getElementById('response-text').innerHTML="",2000)
+            }
+        }
+        else if (closestObj === paintingThreeBound) {
+            hasShipClue = true;
+            hasBookShelfClue = hasShipClue && hasWhaleClue
+            if (!document.getElementById('response-text').innerHTML.length) {
+                document.getElementById('response-text').innerHTML = "Looks like a picture of a captain on a boat"
+                setTimeout(() => {  
+                    document.getElementById('response-text').innerHTML=""
+                    if (hasBookShelfClue) {
+                        document.getElementById('response-text').innerHTML = "Hmm...a captain and a white whale..."
+                        setTimeout(() => document.getElementById('response-text').innerHTML="",3000)
+                    }
+                },2000)
+            }
+        }
+        else if (closestObj === paintingFourBound) {
+            hasWhaleClue = true;
+            hasBookShelfClue = hasShipClue && hasWhaleClue
+            if (!document.getElementById('response-text').innerHTML.length) {
+                document.getElementById('response-text').innerHTML = "Looks like a picture of a white whale"
+                setTimeout(() => {  
+                    document.getElementById('response-text').innerHTML=""
+                    if (hasBookShelfClue) {
+                        document.getElementById('response-text').innerHTML = "Hmm...a captain and a white whale..."
+                        setTimeout(() => document.getElementById('response-text').innerHTML="",3000)
+                    }
+                },2000)
+            }
+        }
+        else if (closestObj === safeBound) {
+            if (hasSafeCombo) {
+                if (!document.getElementById('response-text').innerHTML.length) {
+                    document.getElementById('response-text').innerHTML = "You enter the combination '9-17-32' and the safe opens. Inside you find a key, which you take."
                     setTimeout(() => document.getElementById('response-text').innerHTML="",3000)
                 }
+                hasDoorKey = true;
+            } else {
+                if (!document.getElementById('response-text').innerHTML.length) {
+                    document.getElementById('response-text').innerHTML = "Safe is locked. Press 'g' to guess combination?"
+                    setTimeout(() => document.getElementById('response-text').innerHTML="",2000)
+                }
+            }
+        }
+        else if (closestObj === deskBound) {
+            if (!document.getElementById('response-text').innerHTML.length) {
+                document.getElementById('response-text').innerHTML = "Looks like a standard wooden desk, appears to be empty"
+                setTimeout(() => document.getElementById('response-text').innerHTML="",2000)
+            }
+        }
+        else if (closestObj === chairBound) {
+            if (!document.getElementById('response-text').innerHTML.length) {
+                document.getElementById('response-text').innerHTML = "An old armchair. Still seems comfy though"
+                setTimeout(() => document.getElementById('response-text').innerHTML="",2000)
             }
         }
         // more object cases
@@ -270,6 +868,7 @@ function animate() {
     requestAnimationFrame(animate)
     const moveVector = new THREE.Vector3(0,0,0)
     if (window.isADown) {
+        
         camera.getWorldDirection(camDirection)
         camDirection.cross(new THREE.Vector3(0,-1,0))
         camera.position.add(camDirection.multiplyScalar(.75))
@@ -328,7 +927,9 @@ function animate() {
     if (window.isIDown) {
         interact()
     }
-    // console.log('move vector', moveVector)
+    if (window.isGDown) {
+        guess()
+    }
     // seems like need to re-render bounding boxes whenever they are changed... pretty cool
     firstDoorBound.copy(firstDoor.geometry.boundingBox).applyMatrix4(firstDoor.matrixWorld)
     collisionCheck(moveVector);
@@ -338,26 +939,8 @@ function animate() {
 }
 
 // next steps:
-// things to add:
-// -- safe, bookshelf, maybe some posters/paintings
-// ---- could add a basic chair or something; if interact, could sit down
-// ---- sitting would move camera view down some; not allow movement until standing back up
 
-// order of operations to unlock door:
-// 1: interact with specific paintings/posters: one could have title clue, one author clue, one page num
-// 2: interact with bookshelf: if got all painting clues, would grab specific book and go to page
-// --- once on page, would see number sequence "9-17-32"
-// --- if not all clues, would grab a random book? or just display a message with "You see dozens of classic books; nothing stands out"
-// --- if random book, could have a check to see if you get lucky and get the correct book/page; might be complicated
-// 3: once have clue, can unlock and open safe. inside safe, they will be a key that you grab
-// --- if you interact with safe without code, can randomly guess numbers; can have very slim chance of guessing correctly
-// ----- would want to limit incorrect guesses though; if 4 incorrect guesses, display message like "You hear a robotic voice 'safe will shutdown after 1 more incorrect guess'"
-// 4: with key in hand, if you interact with door, will display "You unlock the door" and set unlocked bool to true
-
-// paintings: 
-// maybe interacting with one says 'you see a picture of a large, white whale'
-// -- if you look at that one, could single out "Moby Dick" from shelf
-// another could have something else, like
+// other potential interactables: lamp, chair, tv? nothing would have for those
 
 // after that, could leave room freely
 // at that point, could look into importing other objects or textures; get basic functionality done first with ugly style, try to spice up later
@@ -368,19 +951,14 @@ function animate() {
 // -- locked door handle sound effect
 // -- unlocking door sound effect
 
-// -- could see if could import sort of these objects, or just spend time making them
 // -- could always talk about during science fair that I want to continue to learn about three js
 // ---- goal here was to build something with minimal guidance/tutorial help
 // ---- now that I know some basics and figured some things out on my own, feel comfortable diving in deeper and learning some cool techniques
 
 
-// - look into adding other objects as mentioned below, or learn more about textures; could make the walls/floor look better
+// - learn more about textures and shading; could make the walls/floor look better
 // - could also add a ceiling
 
 // also could look into a jump mechanic? but then would need some sort of physics
-// after that, maybe look into making or importing other objects; could try to start adding things to the room
-// if objects added to room, could work on figuring out how to interact with them
-// -- could try to add a small cross hair/cursor to show where camera is focused for when objects come into play
-// add a small legend or something that tells what the controls are
 
 animate()
