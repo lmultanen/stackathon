@@ -890,7 +890,7 @@ const interact = () => {
         }
         else if (closestObj === paintingThreeBound) {
             hasShipClue = true;
-            hasBookShelfClue = hasShipClue && hasWhaleClue
+            hasBookShelfClue = (hasShipClue && hasWhaleClue)
             if (!document.getElementById('response-text').innerHTML.length) {
                 document.getElementById('response-text').innerHTML = "Looks like a picture of a captain on a boat"
                 setTimeout(() => {  
@@ -904,7 +904,7 @@ const interact = () => {
         }
         else if (closestObj === paintingFourBound) {
             hasWhaleClue = true;
-            hasBookShelfClue = hasShipClue && hasWhaleClue
+            hasBookShelfClue = (hasShipClue && hasWhaleClue)
             if (!document.getElementById('response-text').innerHTML.length) {
                 document.getElementById('response-text').innerHTML = "Looks like a picture of a white whale"
                 setTimeout(() => {  
