@@ -16,12 +16,14 @@ let hasWhaleClue = false;
 let hasShipClue = false
 let hasBookShelfClue = false;
 let hasDoorKey = false;
+let tvPluggedIn = false;
+let closetUnlocked = false;
 let safeGuesses = 0;
 const bookTitles = ["Of Mice and Men", "Little Women", "Pride and Prejudice", "The Catcher in the Rye", "Animal Farm", "The Great Gatsby", "Lord of the Flies", "Catch-22", "Don Quixote", "Dracula", "The Count of Monte Cristo", "A Tale of Two Cities", "Invisible Man", "Sense and Sensibility", "Persuasion", "The Hobbit","Treasure Island","A Christmas Carol","The Scarlet Letter","Heart of Darkness","The Road","Things Fall Apart", "Crime and Punishment", "War of the Worlds", "Mansfield Park","To Kill a Mockingbird", "Jane Eyre", "The Call of the Wild","Frankenstein","Nineteen Eighty-Four","The Iliad","East of Eden","The Secret Garden","Atlas Shrugged","War and Peace","Peter Pan","Hard Times"]
 const randomBookResponse = ["You flip through a few pages, but don't find anything useful","The text is too difficult for you, you give up quickly", "*Yawn... This book is boring, you put it back", "You read a few pages before putting it away", "One of your favorites! You smile fondly before putting it back"]
 
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth/window.innerHeight,1,500)
-camera.position.set(0,25,80)
+camera.position.set(0,25,60)
 camera.lookAt(0,25,0);
 const camDirection = new THREE.Vector3();
 const boxMaterial = new THREE.MeshBasicMaterial({color: 'blue'})
@@ -29,7 +31,7 @@ const boxGeometry = new THREE.BoxGeometry(10,20,10)
 
 // making camera box to intersect with walls; will see if this works! might not be best practice
 const cameraBox = new THREE.Mesh(boxGeometry, boxMaterial)
-cameraBox.position.set(0,25,80)
+cameraBox.position.set(0,25,60)
 const cameraBoundingBox = new THREE.Box3().setFromObject(cameraBox)
 
 const scene = new THREE.Scene()
@@ -81,10 +83,13 @@ rightWall.position.set(150,30,0)
 const leftWallBound = new THREE.Box3().setFromObject(leftWall)
 const rightWallBound = new THREE.Box3().setFromObject(rightWall)
 
-const floorMaterial = new THREE.MeshBasicMaterial({color: 'burlywood'})
+const floorMaterial = new THREE.MeshBasicMaterial({color: 'sandybrown'})
 const floorGeometry = new THREE.BoxGeometry(300,1,1000);
 const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+const ceilingMaterial = new THREE.MeshBasicMaterial({color: 'gainsboro'})
+const ceiling = new THREE.Mesh(floorGeometry, ceilingMaterial)
 floor.position.set(0,-5,0)
+ceiling.position.set(0,80,0)
 
 // bookshelf geometries
 const shelfMaterial = new THREE.MeshBasicMaterial({color: 'saddlebrown'})
@@ -490,10 +495,10 @@ const deskLegOne = new THREE.Mesh(deskLegGeometry, deskMaterial);
 const deskLegTwo = deskLegOne.clone()
 const deskLegThree = deskLegOne.clone()
 const deskLegFour = deskLegOne.clone()
-deskLegOne.position.set(30,5,129)
+deskLegOne.position.set(31,5,129)
 deskLegTwo.position.set(69,5,141)
 deskLegThree.position.set(69,5,129)
-deskLegFour.position.set(30,5,141)
+deskLegFour.position.set(31,5,141)
 
 scene.add(desk)
 scene.add(deskLegOne,deskLegTwo,deskLegThree,deskLegFour)
@@ -530,11 +535,58 @@ chairLegFour.position.set(-142.5,-2.5,130)
 
 const chairGroup = new THREE.Group().add(chairSeat, chairBack, chairArm, chairArmClone)
 const chairBound = new THREE.Box3().setFromObject(chairGroup)
-
-
 scene.add(chairSeat, chairBack, chairArm, chairArmClone, chairLegOne, chairLegTwo, chairLegThree,chairLegFour)
 
+// lamp
+const lampShadeGeometry = new THREE.CylinderGeometry(3,6,8,8)
+const lampShadeMaterial = new THREE.MeshBasicMaterial({color: 'darkgreen'})
+const lampShade = new THREE.Mesh(lampShadeGeometry, lampShadeMaterial)
+const lampPoleGeometry = new THREE.CylinderGeometry(.5,.5,40,10)
+const lampPoleMaterial = new THREE.MeshBasicMaterial({color: 'gold'})
+const lampPole = new THREE.Mesh(lampPoleGeometry, lampPoleMaterial)
+const lampBaseGeometry = new THREE.BoxGeometry(8,.5,8)
+const lampBaseMaterial = new THREE.MeshBasicMaterial({color: 'darkgoldenrod'})
+const lampBase = new THREE.Mesh(lampBaseGeometry, lampBaseMaterial)
+lampShade.position.set(-100,27,135)
+lampPole.position.set(-100,10, 135)
+lampBase.position.set(-100,-4,135)
 
+const lampGroup = new THREE.Group().add(lampShade, lampPole, lampBase)
+const lampBound = new THREE.Box3().setFromObject(lampGroup)
+scene.add(lampShade, lampPole, lampBase)
+
+// tv stuff
+const tvVertGeometry = new THREE.BoxGeometry(1,14,8)
+const tvHorGeometry = new THREE.BoxGeometry(20,1,8)
+const tvOuterMaterial = new THREE.MeshBasicMaterial({color: 'black'})
+const tvLeftVert = new THREE.Mesh(tvVertGeometry, tvOuterMaterial)
+const tvRightVert = tvLeftVert.clone()
+const tvBottom = new THREE.Mesh(tvHorGeometry, tvOuterMaterial)
+const tvTop = tvBottom.clone()
+tvLeftVert.position.set(93.5,10,-140)
+tvRightVert.position.set(112.5,10,-140)
+tvBottom.position.set(103,3.5,-140)
+tvTop.position.set(103,16.5,-140)
+const tvScreenGeometry = new THREE.BoxGeometry(19,13,6)
+const tvScreenMaterial = new THREE.MeshBasicMaterial({color: 'silver'})
+const tvScreen = new THREE.Mesh(tvScreenGeometry, tvScreenMaterial)
+tvScreen.position.set(103,10,-140)
+const tvStandGeometry = new THREE.BoxGeometry(30,8,12)
+const tvStand = new THREE.Mesh(tvStandGeometry, shelfMaterial)
+tvStand.position.set(103,-1,-142)
+
+const tvGroup = new THREE.Group().add(tvStand,tvScreen)
+const tvBound = new THREE.Box3().setFromObject(tvGroup)
+
+const tvCordGeometry = new THREE.BoxGeometry(40,.5,.5)
+const tvCord = new THREE.Mesh(tvCordGeometry, tvOuterMaterial)
+tvCord.position.set(85,-4,-145)
+const outletGeometry = new THREE.BoxGeometry(2,4,.5)
+const outlet = new THREE.Mesh(outletGeometry,ceilingMaterial)
+outlet.position.set(65,5,-145)
+const outletBound = new THREE.Box3().setFromObject(outlet)
+
+scene.add(tvLeftVert,tvRightVert,tvBottom,tvTop,tvScreen, tvStand, tvCord, outlet)
 
 scene.add(firstDoor)
 scene.add(doorKnob)
@@ -544,12 +596,34 @@ scene.add(frontWallTop)
 scene.add(backWall)
 scene.add(leftWall)
 scene.add(rightWall)
-scene.add(floor)
+scene.add(floor, ceiling)
 renderer.render(scene,camera)
 
+const closetFrontWallGeometry = new THREE.BoxGeometry(65,100,5)
+const closetFrontWall = new THREE.Mesh(closetFrontWallGeometry, materialWall)
+closetFrontWall.position.set(-125,30,-95)
+const closetSideWallGeometry = new THREE.BoxGeometry(5,100,20)
+const closetSideWall = new THREE.Mesh(closetSideWallGeometry, materialWall)
+closetSideWall.position.set(-95,30,-105)
+const closetSideTopGeometry = new THREE.BoxGeometry(5,30,40)
+const closetSideTop = new THREE.Mesh(closetSideTopGeometry, materialWall)
+closetSideTop.position.set(-95,65,-125)
+const closetWallGroup = new THREE.Group().add(closetFrontWall,closetSideWall)
+const closetFrontWallBound = new THREE.Box3().setFromObject(closetWallGroup)
+
+const closetDoorGeomtery = new THREE.BoxGeometry(30,60,2)
+const closetDoor = new THREE.Mesh(closetDoorGeomtery, doorMaterial)
+closetDoor.rotateY(Math.PI/2)
+closetDoor.position.set(-95,20,-130)
+closetDoor.geometry.computeBoundingBox()
+const closetDoorBound = new THREE.Box3()
+
+
+scene.add(closetFrontWall, closetSideWall, closetSideTop, closetDoor)
+
 //array of objects I want to create collision with so far
-const boundaryObjects = [backWallBound,leftWallBound,rightWallBound, frontWallLeftBound, frontWallRightBound, firstDoorBound, shelfBound, paintingOneBound, paintingTwoBound, paintingThreeBound, paintingFourBound, safeBound, deskBound, chairBound]
-const interactiveObjects = [firstDoorBound, shelfBound, paintingOneBound, paintingTwoBound, paintingThreeBound, paintingFourBound, safeBound, deskBound, chairBound]
+const boundaryObjects = [backWallBound,leftWallBound,rightWallBound, frontWallLeftBound, frontWallRightBound, firstDoorBound, shelfBound, paintingOneBound, paintingTwoBound, paintingThreeBound, paintingFourBound, safeBound, deskBound, chairBound, lampBound, tvBound, closetFrontWallBound, closetDoorBound]
+const interactiveObjects = [firstDoorBound, shelfBound, paintingOneBound, paintingTwoBound, paintingThreeBound, paintingFourBound, safeBound, deskBound, chairBound,lampBound, tvBound, outletBound, closetDoorBound]
 
 // key down event handlers
 function handleKeyDown(event) {
@@ -633,7 +707,7 @@ const collisionCheck = (moveVector) => {
 const proximityCheck = () => {
     let count = 0;
     interactiveObjects.forEach(object => {
-        if (object.distanceToPoint(camera.position) < 45) {
+        if (object.distanceToPoint(camera.position) < 40) {
             document.getElementById('interact-text').innerHTML = "Press 'i' to interact"
             count++;
             interact.innerHTML = "Press 'i' to interact"
@@ -739,6 +813,16 @@ const guess = () => {
         }
     }
 }
+
+const openClosetDoor = () => {
+    closetUnlocked = true;
+    let index = interactiveObjects.indexOf(closetDoorBound);
+    interactiveObjects.splice(index,1)
+    closetDoor.rotateY(Math.PI/2)
+    let translation = new THREE.Vector3(1,0,1).normalize()
+    closetDoor.translateOnAxis(translation,-20)
+    // need to rotate door, then also update the bound with the matrix thing
+} 
 
 const interact = () => {
     let checkInteract = document.getElementById('interact-text').innerHTML;
@@ -858,9 +942,58 @@ const interact = () => {
                 setTimeout(() => document.getElementById('response-text').innerHTML="",2000)
             }
         }
+        else if (closestObj === lampBound) {
+            if (!document.getElementById('response-text').innerHTML.length) {
+                document.getElementById('response-text').innerHTML = "You pull the lamp cord, nothing seems to happen"
+                setTimeout(() => document.getElementById('response-text').innerHTML="",2000)
+            }
+        }
+        else if (closestObj === tvBound) {
+            // maybe can try to plug the tv in somehow; then, if plugged in and interact, will unlock safe access
+            if (tvPluggedIn) {
+                if (!closetUnlocked) {
+                    if (!document.getElementById('response-text').innerHTML.length) {
+                        document.getElementById('response-text').innerHTML = "TV won't turn on, but something else happened..."
+                        setTimeout(() => document.getElementById('response-text').innerHTML="",3000)
+                        openClosetDoor()
+                    }
+                } else {
+                    if (!document.getElementById('response-text').innerHTML.length) {
+                        document.getElementById('response-text').innerHTML = "TV won't turn on..."
+                        setTimeout(() => document.getElementById('response-text').innerHTML="",3000)
+                    }
+                }
+            }
+            else {
+                if (!document.getElementById('response-text').innerHTML.length) {
+                    document.getElementById('response-text').innerHTML = "An old TV, doesn't seem to be plugged in..."
+                    setTimeout(() => document.getElementById('response-text').innerHTML="",3000)
+                }
+            }
+        }
+        else if (closestObj === outletBound) {
+            if (!tvPluggedIn) {
+                if (!document.getElementById('response-text').innerHTML.length) {
+                    document.getElementById('response-text').innerHTML = "Plugged cord into outlet"
+                    tvCord.position.set(85,5,-145)
+                    let index = interactiveObjects.indexOf(outletBound)
+                    interactiveObjects.splice(index,1)
+                    tvPluggedIn = true;
+                    setTimeout(() => document.getElementById('response-text').innerHTML="",2000)
+                }
+            }
+        }
+        else if (closestObj === closetDoorBound) {
+            if (!closetUnlocked) {
+                if (!document.getElementById('response-text').innerHTML.length) {
+                    document.getElementById('response-text').innerHTML = "This door won't budge, it also doesn't have a knob..."
+                    setTimeout(() => document.getElementById('response-text').innerHTML="",3000)
+                }
+            }
+        }
         // more object cases
     } else {
-        console.log('nothing to interact with')
+        // nothing happens
     }
 }
 
@@ -932,6 +1065,7 @@ function animate() {
     }
     // seems like need to re-render bounding boxes whenever they are changed... pretty cool
     firstDoorBound.copy(firstDoor.geometry.boundingBox).applyMatrix4(firstDoor.matrixWorld)
+    closetDoorBound.copy(closetDoor.geometry.boundingBox).applyMatrix4(closetDoor.matrixWorld)
     collisionCheck(moveVector);
     proximityCheck();
 
